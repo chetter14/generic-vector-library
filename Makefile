@@ -1,7 +1,7 @@
 # Hardcoded by hand (just for personal use),
 # but in real case it must be fixed
 CXX = /opt/homebrew/opt/llvm/bin/clang++
-CXXFLAGS = -std=c++20 -stdlib=libc++ -fno-implicit-modules -fno-implicit-module-maps
+CXXFLAGS = -std=c++20 -stdlib=libc++
 
 all: main
 
