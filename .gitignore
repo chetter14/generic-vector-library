@@ -4,4 +4,6 @@
 !README.md
 !Vector-impl.cpp
 !Vector.cppm
+!.clang-format
+!format.sh
 !.gitignore

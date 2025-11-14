@@ -1,5 +1,4 @@
-# Hardcoded by hand (just for personal use),
-# but in real case it must be fixed
+
 CXX = /opt/homebrew/opt/llvm/bin/clang++
 CXXFLAGS = -std=c++20 -stdlib=libc++
 
@@ -16,6 +15,9 @@ main.o: main.cpp Vector.o
 
 main: main.o Vector.o Vector-impl.o
 	$(CXX) $(CXXFLAGS) $^ -o $@
+
+format:
+	./format.sh
 
 clean:
 	rm -f *.o *.pcm main
