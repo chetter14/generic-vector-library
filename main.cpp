@@ -38,7 +38,7 @@ int main() {
   auto inv_v3 = invert(v3);
   std::cout << v3 << std::endl;
   std::cout << inv_v3 << std::endl;
-  std::cout << v3.magnitude() << std::endl;
+  //   std::cout << v3.magnitude() << std::endl;
 
   Vector<2, double> v4{3.1, 9.5};
   std::cout << v4 << std::endl;

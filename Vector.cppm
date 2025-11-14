@@ -15,12 +15,26 @@ export template <std::size_t N>
 concept CorrectVectorSize = (N >= 1 && N <= 3);
 
 export template <typename T>
-concept RealValue = std::integral<T> || std::floating_point<T>;
+concept RealType = std::integral<T> || std::floating_point<T>;
 
 export template <typename T>
-concept Integral = std::integral<T>;
+concept Indexable = std::integral<T>;
 
-export template <std::size_t N, RealValue T>
+export template <typename T>
+concept ElementType = requires(T x) {
+  x += x;
+  x -= x;
+  -x;
+  x = x;
+  std::cout << x;
+};
+
+export template <typename ElemType, typename ScalarType>
+concept ScalableWith = requires(ElemType elem, ScalarType scalar) {
+  elem *= scalar;
+};
+
+export template <std::size_t N, ElementType T>
 requires CorrectVectorSize<N> class Vector {
  public:
   Vector(std::initializer_list<T> lst) {
@@ -41,10 +55,7 @@ requires CorrectVectorSize<N> class Vector {
   auto begin() const noexcept { return m_arr.begin(); }
   auto end() const noexcept { return m_arr.end(); }
 
-  constexpr T& operator[](Integral auto index) noexcept
-
-  {
-    int x.= 2;
+  constexpr T& operator[](Indexable auto index) noexcept {
     return m_arr[index];
   }
 
@@ -62,19 +73,20 @@ requires CorrectVectorSize<N> class Vector {
     return *this;
   }
 
-  constexpr Vector& operator*=(RealValue auto scalar) noexcept {
+  constexpr Vector& operator*=(RealType auto scalar) noexcept requires
+      ScalableWith<T, decltype(scalar)> {
     for (auto& val : m_arr) {
       val *= scalar;
     }
     return *this;
   }
 
-  constexpr RealValue auto magnitude() const noexcept {
-    double res = 0;
-    for (auto& val : m_arr)
-      res += val * val;
-    return std::sqrt(res);
-  }
+  //   constexpr RealValue auto magnitude() const noexcept {
+  //     double res = 0;
+  //     for (auto& val : m_arr)
+  //       res += val * val;
+  //     return std::sqrt(res);
+  //   }
 
   friend Vector invert(const Vector& v) noexcept {
     Vector res = v;
