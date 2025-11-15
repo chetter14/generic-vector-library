@@ -21,13 +21,39 @@ export template <typename T>
 concept Indexable = std::integral<T>;
 
 export template <typename T>
-concept ElementType = requires(T x) {
-  x += x;
-  x -= x;
+concept Arithmetic = requires(T x, T y) {
+  x + y;
+  x - y;
+  x += y;
+  x -= y;
+  +x;
   -x;
-  x = x;
-  std::cout << x;
 };
+
+export template <typename T>
+concept Streamable = requires(T x, std::ostream& os) {
+  os << x;
+};
+
+export template <typename T>
+concept Comparable = requires(T x, T y) {
+  x == y;
+  x != y;
+  x > y;
+  x >= y;
+  x < y;
+  x <= y;
+};
+
+export template <typename T>
+concept Movable = requires(T x, T y) {
+  x = std::move(y);
+  T{std::move(x)};
+};
+
+export template <typename T>
+concept ElementType = std::regular<T> && Arithmetic<T> && Streamable<T> &&
+                      Comparable<T> && Movable<T>;
 
 export template <typename ElemType, typename ScalarType>
 concept ScalableWith = requires(ElemType elem, ScalarType scalar) {

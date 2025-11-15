@@ -1,13 +1,12 @@
 #include <iostream>
 #include <string>
+#include <tuple>
 import Vector;
 
+void test_concepts();
+
 int main() {
-  static_assert(CorrectVectorSize<1>);
-  static_assert(CorrectVectorSize<2>);
-  static_assert(CorrectVectorSize<3>);
-  static_assert(!CorrectVectorSize<0>);
-  static_assert(!CorrectVectorSize<4>);
+  test_concepts();
 
   Vector<2, int> v1;
   Vector<2, int> v2;
@@ -48,4 +47,67 @@ int main() {
 
   std::cout << "It works!" << std::endl;
   return 0;
+}
+
+struct PlainStructValue {
+  double x, y;
+};
+
+struct NoEqualityStructValue {
+  double x;
+
+  friend double operator+(NoEqualityStructValue& lhs,
+                          NoEqualityStructValue& rhs) {
+    return 0.0;
+  }
+  friend double operator-(NoEqualityStructValue& lhs,
+                          NoEqualityStructValue& rhs) {
+    return 0.0;
+  }
+
+  double operator+=(NoEqualityStructValue& obj) { return 0.0; }
+  double operator-=(NoEqualityStructValue& obj) { return 0.0; }
+
+  double operator+() { return 0.0; }
+  double operator-() { return 0.0; }
+
+  friend std::ostream& operator<<(std::ostream& os,
+                                  NoEqualityStructValue& obj) {
+    return os;
+  }
+
+  friend int operator<=>(const NoEqualityStructValue& lhs, 
+                         const NoEqualityStructValue& rhs) {
+    return 0;
+  }
+};
+
+struct CorrectStructValue : public NoEqualityStructValue {
+  friend bool operator==(const NoEqualityStructValue& lhs,
+                         const NoEqualityStructValue& rhs) {
+    return false;
+  }
+};
+
+void test_concepts() {
+  static_assert(CorrectVectorSize<1>);
+  static_assert(CorrectVectorSize<2>);
+  static_assert(CorrectVectorSize<3>);
+  static_assert(!CorrectVectorSize<0>);
+  static_assert(!CorrectVectorSize<4>);
+
+  static_assert(RealType<float>);
+  static_assert(RealType<int>);
+  static_assert(RealType<double>);
+  static_assert(!RealType<std::string>);
+  static_assert(!RealType<std::tuple<double, int>>);
+
+  static_assert(Indexable<int>);
+  static_assert(Indexable<char>);
+  static_assert(!Indexable<float>);
+  static_assert(!Indexable<std::string>);
+
+  static_assert(!ElementType<PlainStructValue>);
+  static_assert(!ElementType<NoEqualityStructValue>);
+  static_assert(ElementType<CorrectStructValue>);
 }
