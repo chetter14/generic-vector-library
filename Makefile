@@ -1,4 +1,3 @@
-
 CXX = /opt/homebrew/opt/llvm/bin/clang++
 CXXFLAGS = -std=c++20 -stdlib=libc++
 

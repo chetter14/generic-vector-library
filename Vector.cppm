@@ -52,21 +52,25 @@ concept Movable = requires(T x, T y) {
 };
 
 export template <typename T>
-concept ElementType = std::regular<T> && Arithmetic<T> && Streamable<T> &&
-                      Comparable<T> && Movable<T>;
+concept VectorElementType = std::regular<T> && Arithmetic<T> && Streamable<T> &&
+                            Comparable<T> && Movable<T>;
 
 export template <typename ElemType, typename ScalarType>
 concept ScalableWith = requires(ElemType elem, ScalarType scalar) {
   elem *= scalar;
 };
 
-export template <std::size_t N, ElementType T>
+export template <std::size_t N, VectorElementType T>
 requires CorrectVectorSize<N> class Vector {
  public:
   Vector(std::initializer_list<T> lst) {
+    if (lst.size() != N) {
+      throw std::invalid_argument(
+          "Initializer list size does not match vector dimension!");
+    }
     std::ranges::copy(lst, m_arr.begin());
   }
-  Vector() = default;
+  Vector() : m_arr{} {}
 
   Vector(Vector&&) = default;
   Vector(const Vector&) = default;
