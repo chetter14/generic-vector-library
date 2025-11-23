@@ -5,6 +5,7 @@ module;
 #include <array>
 #include <cmath>
 #include <concepts>
+#include <cstddef>
 #include <iostream>
 #include <ranges>
 #include <type_traits>
@@ -18,16 +19,16 @@ export template <typename T>
 concept RealType = std::integral<T> || std::floating_point<T>;
 
 export template <typename T>
-concept Indexable = std::integral<T>;
+concept Invertable = requires(T x) {
+  -x;
+};
 
-export template <typename T>
-concept Arithmetic = requires(T x, T y) {
+export template <typename T, typename U>
+concept Arithmetic = requires(T x, U y) {
   x + y;
   x - y;
   x += y;
   x -= y;
-  +x;
-  -x;
 };
 
 export template <typename T>
@@ -52,17 +53,20 @@ concept Movable = requires(T x, T y) {
 };
 
 export template <typename T>
-concept VectorElementType = std::regular<T> && Arithmetic<T> && Streamable<T> &&
-                            Comparable<T> && Movable<T>;
+concept VectorElementType =
+    std::regular<T> && Invertable<T> && Arithmetic<T, T> && Streamable<T> &&
+    Comparable<T> && Movable<T>;
 
-export template <typename ElemType, typename ScalarType>
-concept ScalableWith = requires(ElemType elem, ScalarType scalar) {
+export template <typename T, typename U>
+concept ScalableWith = requires(T elem, U scalar) {
   elem *= scalar;
 };
 
 export template <std::size_t N, VectorElementType T>
 requires CorrectVectorSize<N> class Vector {
  public:
+  using value_type = T;
+
   Vector(std::initializer_list<T> lst) {
     if (lst.size() != N) {
       throw std::invalid_argument(
@@ -85,20 +89,32 @@ requires CorrectVectorSize<N> class Vector {
   auto begin() const noexcept { return m_arr.begin(); }
   auto end() const noexcept { return m_arr.end(); }
 
-  constexpr T& operator[](Indexable auto index) noexcept {
+  constexpr T& operator[](std::size_t index) {
+    if (index < 0 || index >= N)
+      throw std::out_of_range("Vector index is out of range!");
     return m_arr[index];
   }
 
-  constexpr Vector& operator+=(const Vector& v) noexcept {
+  constexpr const T& operator[](std::size_t index) const {
+    if (index < 0 || index >= N)
+      throw std::out_of_range("Vector index is out of range!");
+    return m_arr[index];
+  }
+
+  template <typename U>
+  constexpr Vector& operator+=(const Vector<N, U>& v) noexcept requires
+      Arithmetic<T, U> {
     for (int i = 0; i < N; ++i) {
-      m_arr[i] += v.m_arr[i];
+      m_arr[i] += v[i];
     }
     return *this;
   }
 
-  constexpr Vector& operator-=(const Vector& v) noexcept {
+  template <typename U>
+  constexpr Vector& operator-=(const Vector<N, U>& v) noexcept requires
+      Arithmetic<T, U> {
     for (int i = 0; i < N; ++i) {
-      m_arr[i] -= v.m_arr[i];
+      m_arr[i] -= v[i];
     }
     return *this;
   }
@@ -124,15 +140,19 @@ requires CorrectVectorSize<N> class Vector {
     return res;
   }
 
+  template <typename U>
   friend constexpr Vector operator+(const Vector& lhs,
-                                    const Vector& rhs) noexcept {
+                                    const Vector<N, U>& rhs) noexcept requires
+      Arithmetic<T, U> {
     Vector res = lhs;
     res += rhs;
     return res;
   }
 
+  template <typename U>
   friend constexpr Vector operator-(const Vector& lhs,
-                                    const Vector& rhs) noexcept {
+                                    const Vector<N, U>& rhs) noexcept requires
+      Arithmetic<T, U> {
     Vector res = lhs;
     res -= rhs;
     return res;

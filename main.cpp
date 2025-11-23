@@ -36,6 +36,24 @@ int main() {
 
   const Vector<3, int> v3;
 
+  {
+    /* Different size: */
+    Vector<1, short> v4;
+    Vector<2, short> v5;
+
+    // v4 + v5;  // Compile error!
+  }
+
+  {
+    /* Different type: */
+    Vector<2, short> v4;
+    Vector<2, double> v5;
+
+    v4 + v5;
+    v4 - v5;
+    // Compiles fine !
+  }
+
   return 0;
 }
 
@@ -47,6 +65,8 @@ struct PlainStructValue {
 /* Define struct type with all the operators except '==' */
 struct NoEqualityStructValue {
   double x;
+
+  using value_type = decltype(x);
 
   friend double operator+(NoEqualityStructValue& lhs,
                           NoEqualityStructValue& rhs) {
@@ -97,10 +117,19 @@ void test_concepts() {
   static_assert(!RealType<std::string>);
   static_assert(!RealType<std::tuple<double, int>>);
 
-  static_assert(Indexable<int>);
-  static_assert(Indexable<char>);
-  static_assert(!Indexable<float>);
-  static_assert(!Indexable<std::string>);
+  static_assert(Invertable<int>);
+  static_assert(Invertable<double>);
+  static_assert(!Invertable<std::string>);
+
+  static_assert(Arithmetic<int, int>);
+  static_assert(Arithmetic<int, short>);
+  static_assert(Arithmetic<short, int>);
+  static_assert(Arithmetic<double, int>);
+  static_assert(Arithmetic<int, double>);
+  static_assert(!Arithmetic<int, std::string>);
+  static_assert(!Arithmetic<std::string, int>);
+  static_assert(!Arithmetic<CorrectStructValue, int>);
+  static_assert(!Arithmetic<int, CorrectStructValue>);
 
   static_assert(VectorElementType<double>);
   static_assert(VectorElementType<unsigned char>);
