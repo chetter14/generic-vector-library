@@ -1,0 +1,23 @@
+{
+	"version": 3,
+	"configurePresets": [
+		{
+			"name": "vs-2022-64",
+			"generator": "Visual Studio 17 2022",
+			"binaryDir": "${sourceDir}/build/vs",
+			"architecture": "x64"
+		}
+	],
+	"buildPresets": [
+		{
+			"name": "vs-debug",
+			"configurePreset": "vs-2022-64",
+			"configuration": "Debug"
+		},
+		{
+			"name": "vs-release",
+			"configurePreset": "vs-2022-64",
+			"configuration": "Release"
+		}
+	]
+}
