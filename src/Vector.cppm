@@ -19,7 +19,7 @@ export template <typename T>
 concept RealType = std::integral<T> || std::floating_point<T>;
 
 export template <typename T>
-concept Invertable = requires(T x) {
+concept Invertible = requires(T x) {
   -x;
 };
 
@@ -32,18 +32,13 @@ concept Arithmetic = requires(T x, U y) {
 };
 
 export template <typename T>
-concept Streamable = requires(T x, std::ostream& os) {
+concept Printable = requires(T x, std::ostream os) {
   os << x;
 };
 
 export template <typename T>
 concept Comparable = requires(T x, T y) {
-  x == y;
-  x != y;
-  x > y;
-  x >= y;
-  x < y;
-  x <= y;
+  x <=> y;
 };
 
 export template <typename T>
@@ -54,8 +49,7 @@ concept Movable = requires(T x, T y) {
 
 export template <typename T>
 concept VectorElementType =
-    std::regular<T> && Invertable<T> && Arithmetic<T, T> && Streamable<T> &&
-    Comparable<T> && Movable<T>;
+    std::regular<T> && Invertible<T> && Arithmetic<T, T> && Printable<T>;
 
 export template <typename T, typename U>
 concept ScalableWith = requires(T elem, U scalar) {
@@ -67,22 +61,16 @@ requires CorrectVectorSize<N> class Vector {
  public:
   using value_type = T;
 
-  Vector(std::initializer_list<T> lst) {
+  constexpr Vector(std::initializer_list<T> lst) {
     if (lst.size() != N) {
-      throw std::invalid_argument(
-          "Initializer list size does not match vector dimension!");
+      throw std::length_error(
+          "The initializer list size does not match vector dimensions!");
     }
     std::ranges::copy(lst, m_arr.begin());
   }
-  Vector() : m_arr{} {}
-
-  Vector(Vector&&) = default;
-  Vector(const Vector&) = default;
-
-  ~Vector() = default;
-
-  Vector& operator=(Vector&&) = default;
-  Vector& operator=(const Vector&) = default;
+  constexpr Vector() : m_arr() {}
+  constexpr Vector(const Vector& v) : m_arr(v.m_arr) {}
+  constexpr Vector(Vector&& v) : m_arr(std::move(v.m_arr)) {}
 
   auto begin() noexcept { return m_arr.begin(); }
   auto end() noexcept { return m_arr.end(); }
@@ -90,80 +78,72 @@ requires CorrectVectorSize<N> class Vector {
   auto end() const noexcept { return m_arr.end(); }
 
   constexpr T& operator[](std::size_t index) {
-    if (index < 0 || index >= N)
+    if (index >= N)
       throw std::out_of_range("Vector index is out of range!");
     return m_arr[index];
   }
 
   constexpr const T& operator[](std::size_t index) const {
-    if (index < 0 || index >= N)
+    if (index >= N)
       throw std::out_of_range("Vector index is out of range!");
     return m_arr[index];
   }
 
-  template <typename U>
-  constexpr Vector& operator+=(const Vector<N, U>& v) noexcept requires
-      Arithmetic<T, U> {
-    for (int i = 0; i < N; ++i) {
-      m_arr[i] += v[i];
-    }
+  constexpr Vector& operator+=(const Vector& v) noexcept(
+      noexcept(std::declval<T&>() += std::declval<T&>())) {
+    std::ranges::transform(m_arr, v, m_arr.begin(),
+                           [](const auto& a, const auto& b) { return a + b; });
     return *this;
   }
 
-  template <typename U>
-  constexpr Vector& operator-=(const Vector<N, U>& v) noexcept requires
-      Arithmetic<T, U> {
-    for (int i = 0; i < N; ++i) {
-      m_arr[i] -= v[i];
-    }
+  constexpr Vector& operator-=(const Vector& v) noexcept(
+      noexcept(std::declval<T&>() += std::declval<T&>())) {
+    std::ranges::transform(m_arr, v, m_arr.begin(),
+                           [](const auto& a, const auto& b) { return a - b; });
     return *this;
   }
 
-  constexpr Vector& operator*=(RealType auto scalar) noexcept requires
-      ScalableWith<T, decltype(scalar)> {
-    for (auto& val : m_arr) {
-      val *= scalar;
-    }
+  constexpr Vector& operator*=(RealType auto scalar) noexcept(
+      noexcept(std::declval<T&>() *=
+               scalar)) requires ScalableWith<T, decltype(scalar)> {
+    std::for_each(m_arr.begin(), m_arr.end(),
+                  [scalar](auto& val) { val *= scalar; });
     return *this;
   }
 
-  //   constexpr RealValue auto magnitude() const noexcept {
-  //     double res = 0;
-  //     for (auto& val : m_arr)
-  //       res += val * val;
-  //     return std::sqrt(res);
-  //   }
-
-  friend Vector invert(const Vector& v) noexcept {
-    Vector res = v;
+  constexpr Vector operator-() const {
+    Vector res = *this;
     std::for_each(res.begin(), res.end(), [](auto& val) { val = -val; });
     return res;
   }
 
-  template <typename U>
-  friend constexpr Vector operator+(const Vector& lhs,
-                                    const Vector<N, U>& rhs) noexcept requires
-      Arithmetic<T, U> {
-    Vector res = lhs;
-    res += rhs;
-    return res;
-  }
-
-  template <typename U>
-  friend constexpr Vector operator-(const Vector& lhs,
-                                    const Vector<N, U>& rhs) noexcept requires
-      Arithmetic<T, U> {
-    Vector res = lhs;
-    res -= rhs;
-    return res;
-  }
-
-  friend std::ostream& operator<<(std::ostream& os, const Vector& v) {
-    for (const auto& val : v)
-      os << val << " ";
-    return os;
+  void dump(std::ostream& os) const {
+    std::for_each(m_arr.begin(), m_arr.end(),
+                  [&](auto val) { os << val << " "; });
   }
 
  private:
   std::array<T, N> m_arr;
 };
+
+export template <std::size_t N, VectorElementType T>
+std::ostream& operator<<(std::ostream& os, const Vector<N, T>& v) {
+  v.dump(os);
+  return os;
+}
+
+export template <std::size_t N, typename T>
+constexpr Vector<N, T> operator+(const Vector<N, T>& lhs,
+                                 const Vector<N, T>& rhs) noexcept {
+  Vector res = lhs;
+  res += rhs;
+  return res;
+}
+
+export template <std::size_t N, typename T>
+constexpr Vector<N, T> operator-(const Vector<N, T>& lhs,
+                                 const Vector<N, T>& rhs) noexcept {
+  Vector res = lhs;
+  res -= rhs;
+  return res;
+}
